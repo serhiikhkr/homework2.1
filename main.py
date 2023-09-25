@@ -3,9 +3,10 @@ from datetime import datetime
 import re
 import pickle
 from pathlib import Path
+from abc import ABC, abstractmethod
 
 
-class Field:
+class Field(ABC):
     def __init__(self, value):
         self._value = value
 
@@ -13,42 +14,35 @@ class Field:
     def value(self):
         return self._value
 
+    @abstractmethod
+    def validate(self, value):
+        pass
+
 
 class Address(Field):
     def __format__(self, format_spec):
         return '{:^25}'.format(self.value)
 
+    def validate(self, value):
+        if not isinstance(value, str):
+            raise TypeError('Адресс должно быть текстом')
+
 
 class Email(Field):
-    def __init__(self, value):
-        super().__init__(value)
-
     def __format__(self, format_spec):
         return self.value
 
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
+    def validate(self, value):
         regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
-        if re.fullmatch(regex, value):
-            self._value = value
-        else:
-            raise Exception("Вы ввели некорректный e-mail")
+        if not re.fullmatch(regex, value):
+            raise ValueError("Некорректный e-mail")
 
 
 class Birthday(Field):
     def __format__(self, format_spec):
         return datetime.strftime(self.value, "%d.%m.%Y")
 
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
+    def validate(self, value):
         pattern = "\d\d.\d\d.\d{4}"
         if value == re.search(pattern, value).group():
             now_t = datetime.now()
@@ -63,35 +57,15 @@ class Birthday(Field):
 
 
 class Name(Field):
-    def __init__(self, value):
-        super().__init__(value)
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        if type(value) == str:
-            self._value = value
-        else:
+    def validate(self, value):
+        if not isinstance(value, str):
             raise TypeError('Имя должно быть текстом')
 
 
 class Phone(Field):
-    def __init__(self, value):
-        super().__init__(value)
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        if value.isdigit():
-            self._value = value
-        else:
-            raise Exception('Некорректный телефон')
+    def validate(self, value):
+        if not value.isdigit():
+            raise ValueError('Некорректный телефон')
 
 
 class Record:
